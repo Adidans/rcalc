@@ -1,5 +1,7 @@
+use std::error::Error;
+
 use clap::Parser;
-use rcalc::Lexer;
+use rcalc::{Lexer, Token, convert_to_postfix};
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -7,13 +9,14 @@ struct Cli {
     expr: String,
 }
 
-fn main() {
+fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli::parse();
-    let lexer = Lexer::new(&cli.expr);
-    for token in lexer {
-        match token {
-            Ok(token) => println!("{:?}", token),
-            Err(err) => eprintln!("{err}"),
-        }
-    }
+    let tokens: Vec<Token> = match Lexer::new(&cli.expr).collect() {
+        Ok(tokens) => tokens,
+        Err(e) => return Err(e.into()),
+    };
+
+    println!("{:?}", convert_to_postfix(tokens));
+
+    Ok(())
 }

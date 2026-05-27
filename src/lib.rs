@@ -47,10 +47,10 @@ impl<'a> Iterator for Lexer<'a> {
         let token = match ch {
             '(' => Token::LParen,
             ')' => Token::RParen,
-            '+' => Token::Plus,
-            '-' => Token::Minus,
-            '*' => Token::Star,
-            '/' => Token::Slash,
+            '+' => Token::Operator(Operator::Plus),
+            '-' => Token::Operator(Operator::Minus),
+            '*' => Token::Operator(Operator::Star),
+            '/' => Token::Operator(Operator::Slash),
             c if c.is_ascii_digit() => return Some(self.number(c)),
             _ => return Some(Err(LexError::UnexpectedCharacter(ch))),
         };
@@ -64,13 +64,63 @@ pub enum LexError {
     UnexpectedCharacter(char),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Token {
     Literal(f64),
+    Operator(Operator),
+    LParen,
+    RParen,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Operator {
     Plus,
     Minus,
     Star,
     Slash,
-    LParen,
-    RParen,
+}
+
+fn get_precedence_value(op: &Token) -> u8 {
+    match op {
+        Token::Operator(Operator::Minus) | Token::Operator(Operator::Plus) => 1,
+        Token::Operator(Operator::Star) | Token::Operator(Operator::Slash) => 2,
+        Token::LParen | Token::RParen => 3,
+        _ => unreachable!(),
+    }
+}
+
+pub fn convert_to_postfix(tokens: Vec<Token>) -> Vec<Token> {
+    let mut out = Vec::new();
+    let mut op_stack: Vec<Token> = Vec::new();
+
+    for token in tokens {
+        match token {
+            Token::Literal(_) => out.push(token),
+            Token::LParen => op_stack.push(token),
+            Token::RParen => {
+                while op_stack.last().is_some_and(|t| *t != Token::LParen) {
+                    if let Some(op) = op_stack.pop() {
+                        out.push(op);
+                    }
+                }
+                op_stack.pop();
+            }
+            Token::Operator(_) => {
+                while op_stack.last().is_some_and(|t| {
+                    *t != Token::LParen && get_precedence_value(t) >= get_precedence_value(&token)
+                }) {
+                    if let Some(op) = op_stack.pop() {
+                        out.push(op);
+                    }
+                }
+                op_stack.push(token);
+            }
+        }
+    }
+
+    while let Some(op) = op_stack.pop() {
+        out.push(op);
+    }
+
+    out
 }
