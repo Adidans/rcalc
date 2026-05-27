@@ -124,3 +124,39 @@ pub fn convert_to_postfix(tokens: Vec<Token>) -> Vec<Token> {
 
     out
 }
+
+pub fn evaluate(tokens: Vec<Token>) -> f64 {
+    let mut stack: Vec<Token> = Vec::new();
+    for token in tokens {
+        match token {
+            Token::Literal(_) => stack.push(token),
+            Token::Operator(op) => {
+                if let Some(first_operand) = stack.pop() {
+                    if let Some(second_operand) = stack.pop() {
+                        match first_operand {
+                            Token::Literal(val1) => match second_operand {
+                                Token::Literal(val2) => {
+                                    let val = match op {
+                                        Operator::Plus => val2 + val1,
+                                        Operator::Minus => val2 - val1,
+                                        Operator::Star => val2 * val1,
+                                        Operator::Slash => val2 / val1,
+                                    };
+                                    stack.push(Token::Literal(val));
+                                }
+                                _ => unreachable!(),
+                            },
+                            _ => unreachable!(),
+                        }
+                    }
+                }
+            }
+            _ => unreachable!(),
+        }
+    }
+
+    match stack.first().unwrap() {
+        Token::Literal(val) => *val,
+        _ => unreachable!(),
+    }
+}

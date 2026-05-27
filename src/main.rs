@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use clap::Parser;
-use rcalc::{Lexer, Token, convert_to_postfix};
+use rcalc::{Lexer, Token, convert_to_postfix, evaluate};
 
 #[derive(Parser)]
 #[command(version, about)]
@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Err(e) => return Err(e.into()),
     };
 
-    println!("{:?}", convert_to_postfix(tokens));
+    println!("{}", evaluate(convert_to_postfix(tokens)));
 
     Ok(())
 }
